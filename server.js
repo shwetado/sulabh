@@ -2,6 +2,8 @@
 //  OpenShift sample Node application
 var express = require('express');
 var fs      = require('fs');
+var routes = require('./router.js').routes;
+var path = require('path');
 
 
 /**
@@ -113,12 +115,19 @@ var SampleApp = function() {
      */
     self.initializeServer = function() {
         self.createRoutes();
-        self.app = express.createServer();
+        self.app = express();
 
         //  Add handlers for the app (from the routes).
-        for (var r in self.routes) {
-            self.app.get(r, self.routes[r]);
-        }
+        self.app = express();
+        self.app.use(express.json());       // to support JSON-encoded bodies
+        self.app.use(express.urlencoded()); // to support URL-encoded bodies
+        self.app.use(express.static(path.join(__dirname, 'public')));
+        self.app.use(self.app.router);
+
+        self.app.get('/locations', routes.getLoos);
+
+        self.app.post('/add', routes.addLoo);
+        self.app.post('/update', routes.updateLoo);
     };
 
 
