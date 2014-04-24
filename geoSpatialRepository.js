@@ -2,22 +2,6 @@ var geoSpatialRepository = {};
 var mongoose = require('mongoose');
 mongoose.connect('mongodb://admin:u-A9ee4gIvrf@$OPENSHIFT_MONGODB_DB_HOST:$OPENSHIFT_MONGOBD_DB_PORT/');
 
-// Set up our DB API globals.
-var Db         = require('mongodb').Db;
-var Connection = require('mongodb').Connection;
-var Server     = require('mongodb').Server;
-var BSON       = require('mongodb').BSON;
-var ObjectID   = require('mongodb').ObjectID;
-
-// Main DB provider object
-geoSpatialRepository = function(host, port, user, pass) {
-    this.db = new Db(process.env.OPENSHIFT_APP_NAME, new Server(host, port, { auto_reconnect: true }, {}));
-    this.db.open(function(error, db){
-        db.authenticate(user, pass, function(error, result) {});
-    });
-};
-
-
 var Schema = mongoose.Schema;
 
 var LocationSchema = new Schema({
@@ -33,11 +17,11 @@ var LocationSchema = new Schema({
 
 var LocationModel = mongoose.model('locations', LocationSchema);
 
-geoSpatialRepository.prototype.findAll = function(callBack) {
+geoSpatialRepository.findAll = function(callBack) {
     LocationModel.find({}).exec(callBack);
 }
 
-geoSpatialRepository.prototype.find = function(latitude, longitude, radius, callBack) {
+geoSpatialRepository.find = function(latitude, longitude, radius, callBack) {
     var miles = radius * 0.62137;
     LocationModel.find({
         coordinates:{
@@ -49,16 +33,16 @@ geoSpatialRepository.prototype.find = function(latitude, longitude, radius, call
     }).exec(callBack);
 }
 
-geoSpatialRepository.prototype.save = function (data) {
+geoSpatialRepository.save = function (data) {
     var location = new LocationModel(data);
     location.save(function (error, data) {});
 }
 
-geoSpatialRepository.prototype.remove = function(){
+geoSpatialRepository.remove = function(){
     LocationModel.remove({},function(){});
 }
 
-geoSpatialRepository.prototype.update = function(data){
+geoSpatialRepository.update = function(data){
     var callBack = function (err, location) {
         LocationModel.update( { _id: location._id} , data, function(err, data){});
     }
