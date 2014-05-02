@@ -1,13 +1,16 @@
 var geoSpatialRepository = {};
 var mongoose = require('mongoose');
-mongoose.connect('mongodb://admin:u-A9ee4gIvrf@$OPENSHIFT_MONGODB_DB_HOST:$OPENSHIFT_MONGOBD_DB_PORT/');
+mongoose.connect('mongodb://localhost/sulabh');
 
 var Schema = mongoose.Schema;
 
 var LocationSchema = new Schema({
     name: String,
     coordinates: [Number, Number],
-    rating: Number,
+    rating: {
+        sumOfRatings: Number,
+        numOfRatings: Number
+    },
     operational: Boolean,
     hygienic: Boolean,
     free: Boolean,
@@ -33,7 +36,20 @@ geoSpatialRepository.find = function(latitude, longitude, radius, callBack) {
     }).exec(callBack);
 }
 
-geoSpatialRepository.save = function (data) {
+geoSpatialRepository.save = function (params) {
+    var data = {
+        "name": params.name,
+        "coordinates": [params.coordinates[0], params.coordinates[1]],
+        "rating": {
+            "sumOfRatings": params.rating,
+            "numOfRatings": 1
+        },
+        "operational": params.operational,
+        "hygienic": params.hygienic,
+        "free": params.free,
+        "type": params.type,
+        "suitableFor": params.suitableFor
+    }
     var location = new LocationModel(data);
     location.save(function (error, data) {});
 }
@@ -42,11 +58,24 @@ geoSpatialRepository.remove = function(){
     LocationModel.remove({},function(){});
 }
 
-geoSpatialRepository.update = function(data){
+geoSpatialRepository.update = function(params){
     var callBack = function (err, location) {
-        LocationModel.update( { _id: location._id} , data, function(err, data){});
+        var updatedData = {
+            "name": params.name,
+            "coordinates": [params.coordinates[0], params.coordinates[1]],
+            "rating": {
+                "sumOfRatings":((parseInt(location.rating.sumOfRatings) + parseInt(params.rating))),
+                "numOfRatings": (location.rating.numOfRatings + 1)
+            },
+            "operational": params.operational,
+            "hygienic": params.hygienic,
+            "free": params.free,
+            "type": params.type,
+            "suitableFor": params.suitableFor
+        }
+        LocationModel.update( { _id: location._id} , updatedData, function(err, data){});
     }
-    LocationModel.findOne({coordinates: [data.coordinates[0], data.coordinates[1]]}, function(err, doc) {ø}).exec(callBack);
+    LocationModel.findOne({coordinates: [params.coordinates[0], params.coordinates[1]]}, function(err, doc) {}).exec(callBack);
 }
 
 exports.LocationModel = LocationModel;

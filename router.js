@@ -1,11 +1,10 @@
-// var journey = require('journey');
-// var router = new(journey.Router);
+var journey = require('journey');
+var router = new(journey.Router);
 var geoSpatialRepository = require('./geoSpatialRepository.js').geoSpatialRepository;
-var routes = {};
 
-routes.getLoos = function(req, res) {
-    var latitude = req.body.latitude;
-    var longitude = req.body.longitude;
+router.get('/locations').bind(function (req, res, params) {
+    var latitude = params.latitude;
+    var longitude = params.longitude;
     var callBack = function (error, data){
         var response = {};
         response["locations"] = data;
@@ -13,41 +12,57 @@ routes.getLoos = function(req, res) {
         res.send(response);
     };
     geoSpatialRepository.find(latitude, longitude, 2, callBack);
-}
+});
 
-routes.addLoo = function(req, res) {
-    console.log("\n\n"+req.body.latitude + " " + req.body.longitude+"\n\n")
+var getParams = function(params){
+    var suitableFor = params.suitableFor.split(" ");
+    suitableFor = suitableFor.filter(filterEmpty);
     var data = {
-        "name": req.body.name,
-        "coordinates": [req.body.latitude, req.body.longitude],
-        "rating": req.body.rating,
-        "operational": req.body.operational,
-        "hygienic": req.body.hygienic,
-        "free": req.body.free,
-        "type": req.body.kind,
-        "suitableFor": req.body.suitableFor
+        "name": params.name,
+        "coordinates": [params.latitude, params.longitude],
+        "rating": params.rating,
+        "operational": params.operational,
+        "hygienic": params.hygienic,
+        "free": params.free,
+        "type": params.kind,
+        "suitableFor": suitableFor
     }
+    return data;
+}
+router.post('/add').bind(function (req, res, params) {
+    console.log("******* now adding.... ")
+    var data = getParams(params);
     geoSpatialRepository.save(data);
-    console.log("inserted data.."+ JSON.stringify(data));
     res.send("Added Successfully!!");
+});
+
+var filterEmpty = function(value){
+    return value!="";
 }
 
-routes.updateLoo = function(req, res) {
-    geoSpatialRepository.update(req.body);
-    console.log("updated data.."+ JSON.stringify(req.body));
+router.post('/update').bind(function (req, res, params) {
+    console.log("******* now updating.... ")
+    var data = getParams(params);
+    geoSpatialRepository.update(data);
     res.send("Updated Successfully!!");
-}
+});
 
-// require('http').createServer(function (request, response) {
-//     var body = "";
-//     request.addListener('data', function (chunk) { body += chunk });
-//     request.addListener('end', function () {
-        
-//         router.handle(request, body, function (result) {
-//             response.writeHead(result.status, result.headers);
-//             response.end(result.body);
-//         });
-//     });
-// }).listen(3000);
+router.post('/rate').bind(function (req, res, params) {
+    console.log("******* now rating.... ")
+    var data = getParams(params);
+    geoSpatialRepository.update(data);
+    console.log("****** data: "+JSON.stringify(data))
+    res.send("Rated Successfully!!");
+});
 
-exports.routes = routes;
+require('http').createServer(function (request, response) {
+    console.log("**** Server started : ");
+    var body = "";
+    request.addListener('data', function (chunk) { body += chunk });
+    request.addListener('end', function () {
+        router.handle(request, body, function (result) {
+            response.writeHead(result.status, result.headers);
+            response.end(result.body);
+        });
+    });
+}).listen(3000);
